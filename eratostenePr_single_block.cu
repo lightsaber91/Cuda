@@ -22,7 +22,7 @@ void stopAndPrint(cudaEvent_t *start, cudaEvent_t *stop) {
 	HANDLE_ERROR( cudaEventSynchronize(*stop));
 	float time=0;
 	HANDLE_ERROR( cudaEventElapsedTime(&time, *start, *stop));
-	printf("Elapsed Time: %f\n", time);
+	printf("Elapsed Time: %f in milliseconds\n", time);
 	HANDLE_ERROR( cudaEventDestroy(*start));
 	HANDLE_ERROR( cudaEventDestroy(*stop));
 }
@@ -41,8 +41,9 @@ void print(int *array, int size){
 
 __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
     //caso di un singolo blocco
+    int start;
     do {
-        int start = (*next)*(threadIdx.x + 2);
+        start = (*next)*(threadIdx.x + 2);
         for(int i = start-1; i < end; i += (*next)*blockDim.x) {
             //elimino i multipli
             list[i] = 0;
@@ -50,9 +51,8 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         __syncthreads();
         if(threadIdx.x == 0) {
             bool found = false;
-            //atomicExch(&next, 3);
             //cambio il next
-            for(int j = 0; j < end && found == false; j++) {
+            for(int j = 2; j < end && found == false; j+=2) {
                 if(list[j] > *next) {
                     *next = list[j];
                     found = true;
