@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda.h>
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -68,10 +69,7 @@ int main(int argc, char *argv[]) {
     }
     //Stampo i vettori
     for(int i=0; i<array_size; i++) {
-        if(c[i] == d[i]) {
-            printf("Index: %d CPU / GPU = %d / %d\n", i, d[i], c[i]);
-        }
-        else
+        if(c[i] != d[i])
             printf("DIFFERENT --> Index: %d CPU / GPU = %d / %d\n", i, d[i], c[i]);
     }
     //Libero la memoria
