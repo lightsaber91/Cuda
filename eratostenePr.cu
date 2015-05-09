@@ -22,7 +22,7 @@ void stopAndPrint(cudaEvent_t *start, cudaEvent_t *stop) {
 	HANDLE_ERROR( cudaEventSynchronize(*stop));
 	float time=0;
 	HANDLE_ERROR( cudaEventElapsedTime(&time, *start, *stop));
-	printf("Elapsed Time: %f\n", time);
+	printf("Elapsed Time: %f milliseconds\n", time);
 	HANDLE_ERROR( cudaEventDestroy(*start));
 	HANDLE_ERROR( cudaEventDestroy(*stop));
 }
@@ -39,36 +39,71 @@ void print(int *array, int size){
     printf("Total number of primes: %d\n", c);
 }
 
-__global__ void eliminateMultiples(int *list, int end, int next, int fine) {
+__global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
+    __shared__ int block_next;
+    block_next = *next;
+    int start, next_index = 2;
+    do {
+        start = block_next*(threadIdx.x + 2 + blockIdx.x * blockDim.x) - 1;
+        for(int i = start; i < end; i += block_next*blockDim.x*gridDim.x) {
+            //elimino i multipli
+            list[i] = 0;
+        }
+        __syncthreads();
+        if(threadIdx.x == 0) {
+            bool found = false;
+            //cambio il next
+            for(int j = next_index; j < end && found == false; j+=2) {
+                if(list[j] > block_next) {
+                    //atomicExch(next, list[j]);
+                    block_next = list[j];
+                    next_index = j;
+                    found = true;
+                }
+            }
+        }
+        __syncthreads();
+    }while(block_next < fine);
 }
 
 void findAllPrimeNumbers(int N){
-	if(N%2) {
+	//Definisco il numero di blocchi
+    if(N%2) {
         N+=1;
     }
     int blocks = (((N-2)/2)+(THREADS-1))/THREADS;
+    //Variabili GPU
     int *dev_list, *dev_next;
+    //Variabili CPU
     int *list = new int[N];
-    int next;
-	int i;
+    int next = 2;
+    for(int i=0; i<N; i++) {
+        list[i]=i+1;
+    }
+    int fine = (int) (sqrt(N)+0.5);
+    //Timer
     cudaEvent_t start,stop;
-	printf("Number of threads: %d, Number of blocks: %d\n",THREADS,blocks);
+    //Allocazione su GPU
     //cudaMalloc((void**)&dev_end, sizeof(int));
     cudaMalloc((void**)&dev_next,sizeof(int));
     cudaMalloc((void**)&dev_list,sizeof(int)*N);
-	for(i=0; i<N; i++) {
-		list[i]=1;
-	}
+    //Copia dati sulla GPU
     cudaMemcpy(dev_list,list, sizeof(int)*N, cudaMemcpyHostToDevice);
-    next=2;
     cudaMemcpy(dev_next, &next, sizeof(int), cudaMemcpyHostToDevice);
-    int fine = (int) (sqrt(N)+0.5);
+    //Inizializzazione del Timer
     startTimer(&start,&stop);
-    eliminateMultiples<<<blocks,THREADS>>>(dev_list, N, next, fine);
+    //Lancio del Kernel
+    eliminateMultiples<<<blocks,THREADS>>>(dev_list, N, dev_next, fine);
     cudaDeviceSynchronize();
+    //Fine del timer
     stopAndPrint(&start,&stop);
+    //Ricopio il risultato sulla GPU
     cudaMemcpy(list, dev_list, sizeof(int)*N, cudaMemcpyDeviceToHost);
+    //Libero Memoria
     cudaFree(dev_list);
+    cudaFree(dev_next);
+    //Stampo informazioni
+    printf("Number of threads: %d, Number of blocks: %d\n",THREADS,blocks);
     print(list, N);
     delete[] list;
 }
