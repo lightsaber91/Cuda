@@ -45,7 +45,7 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
     int start, next_index = 2;
     do {
         start = block_next*(threadIdx.x + 2 + blockIdx.x * blockDim.x) - 1;
-        for(int i = start; i < end; i += block_next*blockDim.x*gridDim.x) {
+        for(unsigned int i = start; i < end; i += block_next*blockDim.x*gridDim.x) {
             //elimino i multipli
             list[i] = 0;
         }
@@ -72,6 +72,7 @@ void findAllPrimeNumbers(int N){
         N+=1;
     }
     int blocks = (((N-2)/2)+(THREADS-1))/THREADS;
+    printf("Number of threads: %d, Number of blocks: %d\n",THREADS,blocks);
     //Variabili GPU
     int *dev_list, *dev_next;
     //Variabili CPU
@@ -103,7 +104,6 @@ void findAllPrimeNumbers(int N){
     cudaFree(dev_list);
     cudaFree(dev_next);
     //Stampo informazioni
-    printf("Number of threads: %d, Number of blocks: %d\n",THREADS,blocks);
     print(list, N);
     delete[] list;
 }
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
     int N = atoi(argv[1]);
-	if(N<0) {
+    if(N<0) {
 		fprintf(stderr,"Invalid number: %d must be > 0\n",N);
 		exit(-1);
 	}
