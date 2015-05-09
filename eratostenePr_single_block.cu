@@ -41,7 +41,7 @@ void print(int *array, int size){
 
 __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
     //caso di un singolo blocco
-    int start;
+    int start, next_index = 2;
     do {
         start = (*next)*(threadIdx.x + 2);
         for(int i = start-1; i < end; i += (*next)*blockDim.x) {
@@ -52,9 +52,10 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         if(threadIdx.x == 0) {
             bool found = false;
             //cambio il next
-            for(int j = 2; j < end && found == false; j+=2) {
+            for(int j = next_index; j < end && found == false; j+=2) {
                 if(list[j] > *next) {
                     *next = list[j];
+                    next_index = j;
                     found = true;
                 }
             }
