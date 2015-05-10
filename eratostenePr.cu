@@ -28,11 +28,11 @@ void stopAndPrint(cudaEvent_t *start, cudaEvent_t *stop) {
 }
 
 void print(int *array, int size){
-    int i =0;
+    int i = 0;
     int c = 0;
     for (i=0;i<size;i++){
         if (array[i]) {
-            printf("%d\n", i+1);
+            printf("%d\n", array[i]);
             c++;
         }
     }
@@ -40,12 +40,13 @@ void print(int *array, int size){
 }
 
 __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
-    __shared__ int block_next;
+    __shared__ unsigned int block_next;
     block_next = *next;
-    int start, next_index = 2;
+    unsigned long start, i;
+    unsigned int next_index = 2, j;
     do {
-        start = block_next*(threadIdx.x + 2 + blockIdx.x * blockDim.x) - 1;
-        for(unsigned int i = start; i < end; i += block_next*blockDim.x*gridDim.x) {
+        start = (unsigned long) block_next*(threadIdx.x + 2 + blockIdx.x * blockDim.x) - 1;
+        for(i = start; i > 0 && i < end; i += (unsigned long) block_next*blockDim.x*gridDim.x) {
             //elimino i multipli
             list[i] = 0;
         }
@@ -53,9 +54,8 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         if(threadIdx.x == 0) {
             bool found = false;
             //cambio il next
-            for(int j = next_index; j < end && found == false; j+=2) {
+            for(j = next_index; j < end && found == false; j+=2) {
                 if(list[j] > block_next) {
-                    //atomicExch(next, list[j]);
                     block_next = list[j];
                     next_index = j;
                     found = true;
