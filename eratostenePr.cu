@@ -43,10 +43,9 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
     __shared__ unsigned int block_next;
     block_next = *next;
     unsigned long start, i;
-    unsigned int next_index = 2, j;
     do {
         start = (unsigned long) block_next*(threadIdx.x + 2 + blockIdx.x * blockDim.x) - 1;
-        for(i = start; i > 0 && i < end; i += (unsigned long) block_next*blockDim.x*gridDim.x) {
+        for(i = start; i < end; i += (unsigned long) block_next*blockDim.x*gridDim.x) {
             //elimino i multipli
             list[i] = 0;
         }
@@ -54,7 +53,7 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         if(threadIdx.x == 0) {
             bool found = false;
             //cambio il next
-            for(j = next_index; j < end && found == false; j+=2) {
+            for(unsigned int j = block_next + 1; j < end && found == false; j+=2) {
                 if(list[j] > block_next) {
                     block_next = list[j];
                     next_index = j;
