@@ -51,9 +51,15 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         }
         __syncthreads();
         if(threadIdx.x == 0) {
+            unsigned int j;
             bool found = false;
             //cambio il next
-            for(unsigned int j = block_next + 1; j < end && found == false; j+=2) {
+            if(block_next == 2) {
+                j = block_next;
+            }
+            else
+                j = block_next + 1;
+            for(; j < end && found == false; j+=2) {
                 if(list[j] > block_next) {
                     block_next = list[j];
                     found = true;
