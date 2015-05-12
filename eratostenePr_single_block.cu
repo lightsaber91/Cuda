@@ -32,7 +32,7 @@ void print(int *array, int size){
     int c = 0;
     for (i=0;i<size;i++){
         if (array[i]) {
-            printf("%d\n", i+1);
+//            printf("%d\n", i+1);
             c++;
         }
     }
@@ -41,7 +41,7 @@ void print(int *array, int size){
 
 __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
     //caso di un singolo blocco
-    int start, next_index = 2;
+    unsigned int start;
     do {
         start = (*next)*(threadIdx.x + 2);
         for(int i = start-1; i < end; i += (*next)*blockDim.x) {
@@ -50,12 +50,17 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
         }
         __syncthreads();
         if(threadIdx.x == 0) {
-            bool found = false;
+            unsigned int j;
+	    bool found = false;
             //cambio il next
-            for(int j = next_index; j < end && found == false; j+=2) {
+	    if(*next == 2) {
+		j = *next;
+	    }
+	    else
+		j = *next + 1;
+            for(; j < end && found == false; j+=2) {
                 if(list[j] > *next) {
                     *next = list[j];
-                    next_index = j;
                     found = true;
                 }
             }
