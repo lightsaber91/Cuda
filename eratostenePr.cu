@@ -56,7 +56,6 @@ __global__ void eliminateMultiples(int *list, int end, int *next, int fine) {
             for(unsigned int j = block_next + 1; j < end && found == false; j+=2) {
                 if(list[j] > block_next) {
                     block_next = list[j];
-                    next_index = j;
                     found = true;
                 }
             }
